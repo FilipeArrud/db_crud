@@ -58,24 +58,29 @@ const app = new Elysia()
     async ({ db, body, error, formatDate }) => {
       // TODO - Essa query deve inserir um novo registro na tabela posts,
       //  atribuindo os valores passados no corpo da requisição para as colunas title e content
-      const insertQuery: string = "";
+      const insertQuery: string = `INSERT INTO posts (title, content, created_at) VALUES ('${body.title}', '${body.content}', NOW())`;
       // TODO - Essa query deve retornar todas as colunas do último registro da tabela posts
-      const selectQuery: string = "";
-
+      const selectQuery: string = `SELECT * FROM posts ORDER BY id DESC LIMIT 1`;
+  
       try {
-        await db.query(insertQuery, [body.title, body.content]);
+        await db.query(insertQuery);
         const { rows } = await db.query<PostSchema>(selectQuery);
-
-        const { id, created_at, content, title } = rows[0];
-
-        return (
-          <Post
-            id={id}
-            content={content}
-            createdAt={formatDate(created_at)}
-            title={title}
-          ></Post>
-        );
+  
+        if (rows && rows.length > 0) {
+           const { id, created_at, content, title } = rows[0];
+           // Agora você pode usar id, created_at, content e title aqui
+           return (
+             <Post
+               id={id}
+               content={content}
+               createdAt={formatDate(created_at)}
+               title={title}
+             ></Post>
+           );
+        } else {
+          // Lida com o caso onde rows está vazio
+          return error(404, "No posts found");
+        }
       } catch (e) {
         console.error(e);
         return error(500, "Internal Server Error");
@@ -93,26 +98,32 @@ const app = new Elysia()
     async ({ db, body, params, error }) => {
       // TODO - Essa query deve atualizar o registro da tabela posts onde o id é igual ao id passado como parâmetro,
       //  atribuindo os valores passados no corpo da requisição para as colunas title e content
-      const updateQuery: string = "";
+      const updateQuery: string = `UPDATE posts SET title = '${body.title}', content = '${body.content}' WHERE id = ${params.id}`;
 
       // TODO - Essa query deve retornar todas as colunas do registro da tabela posts onde o id é igual ao id passado como parâmetro
-      const selectQuery: string = "";
+      const selectQuery: string = `SELECT * FROM posts WHERE id = ${params.id}`;
 
       try {
-        await db.query(updateQuery, [body.title, body.content, params.id]);
+        // Executa a query de atualização
+        await db.query(updateQuery);
 
-        const { rows } = await db.query<PostSchema>(selectQuery, [params.id]);
+        // Executa a query para obter o registro atualizado
+        const { rows } = await db.query<PostSchema>(selectQuery);
 
-        const post = rows[0];
-
-        return (
-          <Post
-            id={post.id}
-            content={post.content}
-            title={post.title}
-            createdAt={formatDate(post.created_at)}
-          />
-        );
+        if (rows && rows.length > 0) {
+          const post = rows[0];
+          return (
+            <Post
+              id={post.id}
+              content={post.content}
+              title={post.title}
+              createdAt={formatDate(post.created_at)}
+            />
+          );
+        } else {
+          // Retorna um erro 404 se o registro não for encontrado
+          return error(404, "Post not found");
+        }
       } catch (e) {
         console.error(e);
         return error(500, "Internal Server Error");

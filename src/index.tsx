@@ -20,7 +20,8 @@ const app = new Elysia()
   .decorate("formatDate", formatDate)
   .get("/", async ({ db, formatDate }) => {
     // TODO - Essa query deve retornar todas as colunas de todos os registros da tabela posts
-    const query: string = "";
+    //const query: string = "";
+    const query: string = `SELECT id, title, content, created_at FROM posts`;
 
     const { rows } = await db.query<PostSchema>(query);
 
@@ -41,10 +42,11 @@ const app = new Elysia()
   })
   .get("/edit/:id", async ({ db, params, error }) => {
     // TODO - Essa query deve retornar todas as colunas do registro da tabela posts onde o id é igual ao id passado como parâmetro
-    const query: string = "";
+    //const query: string = "";
+    const query: string = `SELECT id, title, content, created_at FROM posts WHERE id = ${params.id}`;
 
     try {
-      const { rows } = await db.query<PostSchema>(query, [params.id]);
+      const { rows } = await db.query<PostSchema>(query);
       const post = rows[0];
 
       return <PostForm {...post} />;
@@ -89,7 +91,7 @@ const app = new Elysia()
     {
       body: t.Object({
         title: t.String(),
-        content: t.String(),
+        content: t.String()
       }),
     }
   )
@@ -98,7 +100,10 @@ const app = new Elysia()
     async ({ db, body, params, error }) => {
       // TODO - Essa query deve atualizar o registro da tabela posts onde o id é igual ao id passado como parâmetro,
       //  atribuindo os valores passados no corpo da requisição para as colunas title e content
-      const updateQuery: string = `UPDATE posts SET title = '${body.title}', content = '${body.content}' WHERE id = ${params.id}`;
+      const updateQuery: string = `UPDATE posts 
+                                   SET title = '${body.title}', 
+                                   content = '${body.content}' 
+                                   WHERE id = ${params.id}`;
 
       // TODO - Essa query deve retornar todas as colunas do registro da tabela posts onde o id é igual ao id passado como parâmetro
       const selectQuery: string = `SELECT * FROM posts WHERE id = ${params.id}`;
@@ -138,10 +143,10 @@ const app = new Elysia()
   )
   .delete("/posts/:id", async ({ db, params, error }) => {
     // TODO - Essa query deve deletar o registro da tabela posts onde o id é igual ao id passado como parâmetro
-    const query: string = "";
+    const query: string = `DELETE FROM posts WHERE id = ${params.id}`;
     
     try {
-      await db.query(query, [params.id]);
+      await db.query(query);
     } catch (e) {
       console.error(e);
       return error(500, "Internal Server Error");
@@ -149,23 +154,17 @@ const app = new Elysia()
   })
   .get("/posts/:id", async ({ db, params, error }) => {
     // TODO - Essa query deve retornar todas as colunas do registro da tabela posts onde o id é igual ao id passado como parâmetro
-    const postsQuery = ``;
+    const postsQuery: string = `SELECT id, title, content, created_at FROM posts WHERE id = ${params.id}`;
 
     // TODO - Essa query deve retornar as colunas:
     // content, created_at, e id
     // dos registros da tabela comments onde o id do post relacionado é igual ao id passado como parâmetro
-    const commentsQuery = ``;
+    const commentsQuery = `SELECT id, content, created_at FROM comments WHERE post_id = ${params.id}`;
 
     try {
-      const { rows: postRows } = await db.query<PostSchema>(
-        postsQuery,
-        [params.id]
-      );
+      const { rows: postRows } = await db.query<PostSchema>(postsQuery);
       const post = postRows[0];
-      const { rows: commentRows } = await db.query<CommentSchema>(
-        commentsQuery,
-        [params.id]
-      );
+      const { rows: commentRows } = await db.query<CommentSchema>(commentsQuery);
       post.comments = commentRows;
 
       return (
@@ -194,17 +193,18 @@ const app = new Elysia()
     async ({ db, body, params, error }) => {
       // TODO - Essa query deve inserir um novo registro na tabela comments,
       //  atribuindo os valores passados no corpo da requisição para as colunas content e post_id
-      const insertQuery = ``;
+      const insertQuery : string = `INSERT INTO comments 
+                                    (content, created_at, post_id) 
+                                    VALUES ('${body.content}', NOW(), '${params.postId}')`;
 
       // TODO - Essa query deve retornar todas as colunas do último registro da tabela comments onde o id
       // do post relacionado é igual ao id passado como parâmetro
-      const selectQuery = ``;
+      const selectQuery : string = `SELECT * FROM comments 
+                                    WHERE post_id = ${params.postId} ORDER BY id DESC LIMIT 1`;
       try {
-        await db.query(insertQuery, [body.content, params.postId]);
+        await db.query(insertQuery);
 
-        const { rows } = await db.query<CommentSchema>(selectQuery, [
-          params.postId,
-        ]);
+        const { rows } = await db.query<CommentSchema>(selectQuery);
 
         const comment = rows[0];
 
@@ -222,9 +222,9 @@ const app = new Elysia()
   )
   .delete("/comments/:id", async ({ db, params, error }) => {
     // TODO - Essa query deve deletar o registro da tabela comments onde o id é igual ao id passado como parâmetro
-    const query = ``;
+    const query: string = `DELETE FROM comments WHERE id = ${params.id}`;
     try {
-      await db.query(query, [params.id]);
+      await db.query(query);
     } catch (e) {
       console.error(e);
       return error(500, "Internal Server Error");
